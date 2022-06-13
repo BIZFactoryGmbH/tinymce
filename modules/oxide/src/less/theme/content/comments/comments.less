@@ -7,9 +7,10 @@
 @document-comment-outline-color: #ffe89d;
 
 .tox-comments-visible {
+  // :not([data-mce-selected])
   .tox-comment[contenteditable="false"],
-  .tox-comment img,
-  .tox-comment span.mce-preview-object {
+  span.tox-comment img,
+  span.tox-comment span.mce-preview-object {
     outline: 3px solid @document-comment-outline-color;
   }
 

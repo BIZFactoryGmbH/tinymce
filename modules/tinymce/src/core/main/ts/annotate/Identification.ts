@@ -48,7 +48,6 @@ const isAnnotation = (elem: any): boolean => SugarNode.isElement(elem) && Class.
 const isOffscreenSelectionElement = (elem: SugarElement<Node>, root: SugarElement<Node>) =>
   PredicateExists.closest(elem, (node) => Class.has(node, 'mce-offscreen-selection'), isRoot(root));
 
-// TODO: Maybe have includeOffscreen parameter
 const findMarkers = (editor: Editor, uid: string): Array<SugarElement<Element>> => {
   const body = SugarElement.fromDom(editor.getBody());
   const descendants = SelectorFilter.descendants(body, `[${Markings.dataAnnotationId()}="${uid}"]`);
@@ -58,7 +57,6 @@ const findMarkers = (editor: Editor, uid: string): Array<SugarElement<Element>> 
 const findAll = (editor: Editor, name: string): Record<string, SugarElement[]> => {
   const body = SugarElement.fromDom(editor.getBody());
   const markers = SelectorFilter.descendants(body, `[${Markings.dataAnnotation()}="${name}"]`);
-  // console.log(markers);
   const directory: Record<string, SugarElement[]> = {};
   Arr.each(markers, (m) => {
     if (!isOffscreenSelectionElement(m, body)) {

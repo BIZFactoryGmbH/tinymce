@@ -84,7 +84,6 @@ const Annotator = (editor: Editor): Annotator => {
       const bookmark = editor.selection.getBookmark();
       identify(editor, Optional.some(name)).each(({ elements }) => {
         Arr.each(elements, (element) => {
-          // console.log(elements);
           if (SugarNode.isTag('span')(element)) {
             Remove.unwrap(element);
           } else {
@@ -104,7 +103,6 @@ const Annotator = (editor: Editor): Annotator => {
     removeAll: (name: string): void => {
       const bookmark = editor.selection.getBookmark();
       Obj.each(findAll(editor, name), (elements, _) => {
-        // console.log(elements);
         Arr.each(elements, (element) => {
           // console.log(elements);
           if (SugarNode.isTag('span')(element)) {

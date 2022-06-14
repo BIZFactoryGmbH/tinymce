@@ -34,8 +34,6 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
           })
         });
         ed.annotator.annotationChanged('test-annotation', (state, _name, data) => {
-          // console.log('annotation changed');
-          // console.log(data, state);
           annotationChangeData.push({
             state,
             uid: data?.uid ?? '',

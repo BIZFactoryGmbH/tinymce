@@ -1,6 +1,6 @@
 import { UiFinder, Cursors, Mouse, Waiter } from '@ephox/agar';
 import { beforeEach, context, describe, it } from '@ephox/bedrock-client';
-import { Arr } from '@ephox/katamari';
+import { Arr, Obj } from '@ephox/katamari';
 import { Value } from '@ephox/sugar';
 import { TinyAssertions, TinyDom, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
@@ -34,11 +34,13 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
           })
         });
         ed.annotator.annotationChanged('test-annotation', (state, _name, data) => {
+          // console.log('annotation changed');
+          // console.log(data, state);
           annotationChangeData.push({
             state,
-            uid: data.uid ?? '',
-            rawNodes: data.nodes ?? [],
-            nodeNames: Arr.map(data.nodes ?? [], (node) => (node as Node).nodeName.toLowerCase())
+            uid: data?.uid ?? '',
+            rawNodes: data?.nodes ?? [],
+            nodeNames: Arr.map(data?.nodes ?? [], (node) => (node as Node).nodeName.toLowerCase())
           });
         });
       });
@@ -71,14 +73,16 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
       assert.lengthOf(annotationChangeData, expected.length);
       Arr.each(annotationChangeData, (data, i) => {
         const expectedData = expected[i];
-        // console.log(Arr.unique(data.rawNodes, (a, b) => a.isEqualNode(b)));
-        // assert.lengthOf(Arr.unique(data.rawNodes, Fun.tripleEquals), data.rawNodes.length, 'All nodes should be unique');
         assert.equal(data.state, expectedData.state);
         assert.equal(data.uid, expectedData.uid);
         assert.deepEqual(data.nodeNames, expectedData.nodeNames);
       });
-
     });
+
+  const assertGetAll = (editor: Editor, expected: Record<string, string[]>) => {
+    const actual = Obj.map(editor.annotator.getAll('test-annotation'), (nodes, _key) => Arr.map(nodes, (node) => node.nodeName.toLowerCase()));
+    assert.deepEqual(actual, expected);
+  };
 
   const testApplyAnnotationOnSelection = (
     editor: Editor,
@@ -507,16 +511,57 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
     it('TINY-8698: should fire `annotationChange` API callback when annotated codesample is selected', async () => {
       const editor = hook.editor();
 
-      testAllContentSelectionAnnotation(
-        hook.editor(),
-        codesampleHtml,
-        [ `<pre class="language-markup" contenteditable="false" ${expectedBlockAnnotationAttrs()}>test</pre>` ],
-        selectionPath([], 0, [], 3),
+      testApplyAnnotationOnSelection(
+        editor,
+        `<p>Before</p>${codesampleHtml}<p>After</p>`,
+        () => TinySelections.setSelection(editor, [ 0, 0 ], 3, [], 3),
+        [
+          `<p>Bef<span ${expectedSpanAnnotationAttrs()}>ore</span></p>`,
+          `<pre class="language-markup" contenteditable="false" ${expectedBlockAnnotationAttrs()}>test</pre>`,
+          `<p><span ${expectedSpanAnnotationAttrs()}>After</span></p>`,
+        ],
+        selectionPath([ 0 ], 1, [], 3),
+        3
+      );
+      await Waiter.pWait(100);
+
+      annotationChangeData = [];
+      TinySelections.setCursor(editor, [ 0, 0 ], 1, true);
+      await pAssertAnnotationChangeData([{ state: false, uid: '', nodeNames: [] }]);
+
+      annotationChangeData = [];
+      TinySelections.select(editor, 'pre', []);
+      await pAssertAnnotationChangeData([{ state: true, uid: 'test-uid-1', nodeNames: [ 'span', 'pre', 'span' ] }]);
+    });
+
+    it('TINY-8698: should be able to get all annotations using the `getAll` API', () => {
+      const editor = hook.editor();
+
+      testApplyAnnotationOnSelection(
+        editor,
+        `<p>Before</p>${codesampleHtml}<p>After</p>`,
+        () => TinySelections.setSelection(editor, [ 0, 0 ], 3, [], 3),
+        [
+          `<p>Bef<span ${expectedSpanAnnotationAttrs()}>ore</span></p>`,
+          `<pre class="language-markup" contenteditable="false" ${expectedBlockAnnotationAttrs()}>test</pre>`,
+          `<p><span ${expectedSpanAnnotationAttrs()}>After</span></p>`,
+        ],
+        selectionPath([ 0 ], 1, [], 3),
         3
       );
 
-      TinySelections.select(editor, 'pre', []);
-      await pAssertAnnotationChangeData([{ state: true, uid: 'test-uid-1', nodeNames: [ 'span', 'pre', 'span' ] }]);
+      TinySelections.setCursor(editor, [ 0, 0 ], 1, true);
+      assertGetAll(editor, { 'test-uid-1': [ 'span', 'pre', 'span' ] });
+
+      testDirectSelectionAnnotation(
+        editor,
+        codesampleHtml,
+        'pre',
+        [ `<pre class="language-markup" contenteditable="false" ${expectedBlockAnnotationAttrs(2)}>test</pre>` ],
+        selectionPath([], 1, [], 2),
+        2 // Extra one for offscreen selection copy
+      );
+      assertGetAll(editor, { 'test-uid-2': [ 'pre' ] });
     });
 
     it('TINY-8698: should annotate `pre` children if not the exact same as codesample structure', () => {

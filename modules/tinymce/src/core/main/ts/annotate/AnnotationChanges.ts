@@ -44,10 +44,14 @@ const setup = (editor: Editor, registry: AnnotationsRegistry): AnnotationChanges
 
   const fireCallbacks = (name: string, uid: string, elements: any[]): void => {
     withCallbacks(name, (data) => {
+      // console.log('elms', elements[0].dom.parentNode);
+      // console.log('elms2', Arr.bind(elements, (elem) => Traverse.parent(elem).exists((parent) => Class.has(parent, 'mce-offscreen-selection')) ? [] : [ elem.dom ]));
       Arr.each(data.listeners, (f) => f(true, name, {
         uid,
         // TODO: May have to check for duplicates here since 'pre' is duplicated when selected so shows up twice in the list
+        // TODO: CHeck if parent is offscreen span/div
         nodes: Arr.map(elements, (elem) => elem.dom)
+        // nodes: Arr.bind(elements, (elem) => Traverse.parent(elem).exists((parent) => Class.has(parent, 'mce-offscreen-selection')) ? [] : [ elem.dom ])
       }));
     });
   };
@@ -59,11 +63,11 @@ const setup = (editor: Editor, registry: AnnotationsRegistry): AnnotationChanges
   };
 
   const toggleActiveAttr = (uid: string, state: boolean) => {
-    Arr.each(Identification.findMarkers(editor, uid), (span) => {
+    Arr.each(Identification.findMarkers(editor, uid), (elem) => {
       if (state) {
-        Attribute.set(span, Markings.dataAnnotationActive(), 'true');
+        Attribute.set(elem, Markings.dataAnnotationActive(), 'true');
       } else {
-        Attribute.remove(span, Markings.dataAnnotationActive());
+        Attribute.remove(elem, Markings.dataAnnotationActive());
       }
     });
   };

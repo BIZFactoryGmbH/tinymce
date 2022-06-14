@@ -1,4 +1,4 @@
-import { Mouse, UiFinder, Waiter } from '@ephox/agar';
+import { UiFinder, Waiter } from '@ephox/agar';
 import { before, context, describe, it } from '@ephox/bedrock-client';
 import { Arr } from '@ephox/katamari';
 import { Class, Compare, Css, SelectorFilter, SugarElement, SugarNode } from '@ephox/sugar';
@@ -120,53 +120,54 @@ describe('browser.tinymce.core.annotate.OutlineOnBlocksTest', () => {
     '</div>';
 
   Arr.each([
-    { label: 'image', selector: 'img', html: imageHtml },
-    { label: 'image with caption', selector: 'img', outlineSelector: 'figure.image', html: figureImageHtml },
-    { label: 'codesample', selector: 'pre', html: codesampleHtml },
-    { label: 'table of contents', selector: 'div.mce-toc', html: tocHtml },
-    { label: 'iframe (YouTube video)', selector: 'iframe', outlineSelector: 'span.mce-preview-object', html: iframeHtml },
-    { label: 'audio', selector: 'audio', outlineSelector: 'span.mce-preview-object', html: audioHtml },
-    { label: 'video', selector: 'video', outlineSelector: 'span.mce-preview-object', html: videoHtml },
-    { label: 'mediaembed iframe (YouTube video)', selector: 'iframe', outlineSelector: 'div[data-ephox-embed-iri]', html: iframeMediaEmbedHtml },
-    { label: 'mediaembed video', selector: 'video', outlineSelector: 'div[data-ephox-embed-iri]', html: videoMediaEmbedHtml },
-    { label: 'mediaembed audio', selector: 'audio', outlineSelector: 'div[data-ephox-embed-iri]', html: audioMediaEmbedHtml },
-    { label: 'pageembed website', selector: 'iframe', outlineSelector: 'div.tiny-pageembed', html: pageEmbedHtml },
-  ], ({ label, selector, outlineSelector, html }) => {
+    { label: 'image', name: 'img', html: imageHtml },
+    { label: 'image with caption', name: 'img', outlineSelector: 'figure.image', html: figureImageHtml },
+    { label: 'codesample', name: 'pre', html: codesampleHtml },
+    { label: 'table of contents', name: 'div.mce-toc', html: tocHtml },
+    { label: 'iframe (YouTube video)', name: 'iframe', outlineSelector: 'span.mce-preview-object', html: iframeHtml },
+    { label: 'audio', name: 'audio', outlineSelector: 'span.mce-preview-object', html: audioHtml },
+    { label: 'video', name: 'video', outlineSelector: 'span.mce-preview-object', html: videoHtml },
+    { label: 'mediaembed iframe (YouTube video)', name: 'iframe', outlineSelector: 'div[data-ephox-embed-iri]', html: iframeMediaEmbedHtml },
+    { label: 'mediaembed video', name: 'video', outlineSelector: 'div[data-ephox-embed-iri]', html: videoMediaEmbedHtml },
+    { label: 'mediaembed audio', name: 'audio', outlineSelector: 'div[data-ephox-embed-iri]', html: audioMediaEmbedHtml },
+    { label: 'pageembed website', name: 'iframe', outlineSelector: 'div.tiny-pageembed', html: pageEmbedHtml },
+  ], ({ label, name, outlineSelector, html }) => {
     context(label, () => {
       const editorHtml = `<p>Before</p>${html}<p>After</p>`;
-      const clickOnElm = (editor: Editor) => Mouse.trueClickOn(TinyDom.body(editor), selector);
+      const selector = outlineSelector ?? name;
+      const selectElm = (editor: Editor) => TinySelections.select(editor, selector, []);
 
       it('should have no outline when not selected and has no attributes', async () => {
         const editor = hook.editor();
         editor.setContent(editorHtml);
         TinySelections.setCursor(editor, [ 0, 0 ], 1);
-        await pAssertOutline(editor, outlineSelector ?? selector, emptyOutline);
+        await pAssertOutline(editor, selector, emptyOutline);
       });
 
       it('should have blue outline when selected', async () => {
         const editor = hook.editor();
         editor.setContent(editorHtml);
-        clickOnElm(editor);
-        await pAssertOutline(editor, outlineSelector ?? selector, selectedOutline);
+        selectElm(editor);
+        await pAssertOutline(editor, selector, selectedOutline);
       });
 
       it('should have yellow outline when element has comment attribute but is not selected', async () => {
         const editor = hook.editor();
         editor.setContent(editorHtml);
-        clickOnElm(editor);
+        selectElm(editor);
         editor.annotator.annotate('test-comment', {});
         TinySelections.setCursor(editor, [ 0, 0 ], 1);
-        await pAssertOutline(editor, outlineSelector ?? selector, commentOutline);
+        await pAssertOutline(editor, selector, commentOutline);
       });
 
       it('should have blue outline when element with comment attribute is selected', async () => {
         const editor = hook.editor();
         editor.setContent(editorHtml);
-        clickOnElm(editor);
+        selectElm(editor);
         editor.annotator.annotate('test-comment', {});
         TinySelections.setCursor(editor, [ 0, 0 ], 1);
-        clickOnElm(editor);
-        await pAssertOutline(editor, outlineSelector ?? selector, selectedOutline);
+        selectElm(editor);
+        await pAssertOutline(editor, selector, selectedOutline);
       });
     });
   });
@@ -183,7 +184,7 @@ describe('browser.tinymce.core.annotate.OutlineOnBlocksTest', () => {
     it('should have blue outline for nested editable region when selected noneditable ancestor has a comment', async () => {
       const editor = hook.editor();
       editor.setContent(figureImageHtml);
-      Mouse.trueClickOn(TinyDom.body(editor), 'img');
+      TinySelections.select(editor, 'img', []);
       editor.annotator.annotate('test-comment', {});
       TinySelections.setCursor(editor, [ 0, 1, 0 ], 1, true);
       await pAssertOutline(editor, 'figure.image', selectedOutline, false);

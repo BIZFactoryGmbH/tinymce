@@ -1,8 +1,8 @@
-import { UiFinder, Cursors, Mouse, Waiter } from '@ephox/agar';
+import { UiFinder, Cursors, Waiter } from '@ephox/agar';
 import { beforeEach, context, describe, it } from '@ephox/bedrock-client';
 import { Arr, Obj } from '@ephox/katamari';
 import { Value } from '@ephox/sugar';
-import { TinyAssertions, TinyDom, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
+import { TinyAssertions, TinyHooks, TinySelections, TinyUiActions } from '@ephox/wrap-mcagar';
 import { assert } from 'chai';
 
 import Editor from 'tinymce/core/api/Editor';
@@ -132,7 +132,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
     testApplyAnnotationOnSelection(
       editor,
       `<p>Before</p>${html}<p>After</p>`,
-      () => Mouse.trueClickOn(TinyDom.body(editor), selector),
+      () => TinySelections.select(editor, selector, []),
       [
         '<p>Before</p>',
         ...expectedHtml,
@@ -164,7 +164,8 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
     );
 
   context('image', () => {
-    const imgHtml = `<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="600" height="400">`;
+    // const imgHtml = `<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="600" height="400">`;
+    const imgHtml = `<img src="https://www.w3schools.com/w3css/img_lights.jpg" alt="" width="600" height="400">`;
 
     it('TINY-8698: should apply annotation span around image when directly selected', () => {
       testDirectSelectionAnnotation(
@@ -209,7 +210,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
       testDirectSelectionAnnotation(
         hook.editor(),
         `<figure class="image">${imgHtml}<figcaption>x</figcaption></figure>`,
-        'img',
+        'figure',
         [ `<figure class="image" ${expectedBlockAnnotationAttrs()}>${imgHtml}<figcaption>x</figcaption></figure>` ],
         selectionPath([], 1, [], 2),
         2 // Extra one for offscreen selection copy
@@ -232,7 +233,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
       testDirectSelectionAnnotation(
         hook.editor(),
         `<figure class="image">${imgHtml}<figcaption>x</figcaption></figure>`,
-        'img',
+        'figure',
         [ `<figure class="image" ${expectedBlockAnnotationAttrs()}>${imgHtml}<figcaption>x</figcaption></figure>` ],
         selectionPath([], 1, [], 2),
         2 // Extra one for offscreen selection copy
@@ -261,10 +262,10 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
     const videoHtml = '<video controls="controls" width="300" height="150"><source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4"></video>';
 
     Arr.each([
-      { label: 'iframe (YouTube video)', selector: 'iframe', html: iframeHtml },
-      { label: 'audio', selector: 'audio', html: audioHtml },
-      { label: 'video', selector: 'video', html: videoHtml }
-    ], ({ label, selector, html }) => {
+      { label: 'iframe (YouTube video)', name: 'iframe', selector: 'span.mce-preview-object', html: iframeHtml },
+      { label: 'audio', name: 'audio', selector: 'span.mce-preview-object', html: audioHtml },
+      { label: 'video', name: 'video', selector: 'span.mce-preview-object', html: videoHtml }
+    ], ({ label, name, selector, html }) => {
       context(label, () => {
         it('should have wrapping mce-preview-object span', () => {
           const editor = hook.editor();
@@ -282,7 +283,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
             [
               '<p>before' +
               `<span ${expectedSpanAnnotationAttrs()}>` +
-              `<span contenteditable="false" data-mce-object="${selector}">` +
+              `<span contenteditable="false" data-mce-object="${name}">` +
               html +
               '<span class="mce-shim"></span>' +
               '</span>' +
@@ -299,7 +300,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
             `<p>before${html}after</p>`,
             [
               `<p><span ${expectedSpanAnnotationAttrs()}>before` +
-              `<span contenteditable="false" data-mce-object="${selector}">` +
+              `<span contenteditable="false" data-mce-object="${name}">` +
               html +
               '<span class="mce-shim"></span>' +
               '</span>' +
@@ -319,7 +320,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
 
               `<p>Before</p>`,
               `<p>bef<span ${expectedSpanAnnotationAttrs()}>ore` +
-              `<span contenteditable="false" data-mce-object="${selector}">` +
+              `<span contenteditable="false" data-mce-object="${name}">` +
               html +
               `<span class="mce-shim"></span>` +
               `</span>` +
@@ -379,8 +380,10 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
     });
 
     it('TINY-8698: should be able to remove annotation from codesample and other annotations of the same id when it is selected', () => {
+      const editor = hook.editor();
+
       testAllContentSelectionAnnotation(
-        hook.editor(),
+        editor,
         codesampleHtml,
         [ `<pre class="language-markup" contenteditable="false" ${expectedBlockAnnotationAttrs()}>test</pre>` ],
         selectionPath([], 0, [], 3),
@@ -388,8 +391,8 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
       );
 
       testRemoveAnnotationOnSelection(
-        hook.editor(),
-        (editor) => Mouse.trueClickOn(TinyDom.body(editor), 'pre'),
+        editor,
+        () => TinySelections.select(editor, 'pre', []),
         [
           `<p>Before</p>`,
           `<pre class="language-markup" contenteditable="false">test</pre>`,
@@ -453,7 +456,7 @@ describe('browser.tinymce.core.annotate.AnnotateBlocksTest', () => {
 
       testRemoveAnnotationOnSelection(
         editor,
-        () => Mouse.trueClickOn(TinyDom.body(editor), 'pre'),
+        () => TinySelections.select(editor, 'pre', []),
         [
           `<p><span ${expectedSpanAnnotationAttrs(2)}>Before</span></p>`,
           `<pre class="language-markup" contenteditable="false">test</pre>`,
